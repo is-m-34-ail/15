@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Мои дела — React-список задач</title>
+    <style>
+        /* -------------------------------
+           ОБЩИЕ СТИЛИ (как для души, так и для дела)
+        ------------------------------- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Градиент — моя любимая фишка, придаёт глубины */
+            background: linear-gradient(145deg, #e2e9ff 0%, #c0c9f0 100%);
+            font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        /* Центрируем всю красоту */
+        .todo-wrapper {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Белая карточка — как блокнот */
+        .todo-card {
+            background: rgba(255,255,255,0.96);
+            border-radius: 2rem;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 20px 35px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(0px);
+            transition: all 0.2s ease;
+        }
+
+        /* Заголовок с лёгкой улыбкой */
+        .todo-card h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #2c3e66, #4a69bd);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            letter-spacing: -0.3px;
+        }
+
+        .sub {
+            color: #5b6e8c;
+            border-left: 4px solid #4a69bd;
+            padding-left: 12px;
+            margin-bottom: 1.8rem;
+            font-size: 0.9rem;
+        }
+
+        /* ---------- форма добавления ---------- */
+        .add-task-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .add-task-form input {
+            flex: 1;
+            padding: 12px 18px;
+            border: 1px solid #cddae9;
+            border-radius: 40px;
+            font-size: 1rem;
+            background: #fefefe;
+            transition: 0.2s;
+        }
+
+        .add-task-form input:focus {
+            border-color: #4a69bd;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(74,105,189,0.2);
+        }
+
+        .add-task-form button {
+            background: #2c3e66;
+            border: none;
+            padding: 0 28px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .add-task-form button:hover {
+            background: #1f2c48;
+            transform: scale(0.97);
+        }
+
+        /* ---------- кнопки фильтров ---------- */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #edf2f7;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #2d3e5f;
+        }
+
+        .filter-btn.active {
+            background: #2c3e66;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .filter-btn:hover:not(.active) {
+            background: #dee5ef;
+        }
+
+        /* ---------- счётчик задач ---------- */
+        .task-stats {
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 12px 20px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: #2c3e66;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        /* ---------- список задач ---------- */
+        .tasks-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* одна задача — карточка */
+        .task-item {
+            background: #ffffff;
+            border-radius: 1.2rem;
+            padding: 12px 18px;
+            border: 1px solid #e2edff;
+            transition: all 0.2s;
+        }
+
+        .task-item:hover {
+            border-color: #b9ceff;
+            background: #fdfdfd;
+        }
+
+        /* режим просмотра (view) */
+        .task-view {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .task-check {
+            width: 22px;
+            height: 22px;
+            accent-color: #4a69bd;
+            cursor: pointer;
+        }
+
+        .task-text {
+            flex: 1;
+            font-size: 1rem;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        .task-text.completed {
+            text-decoration: line-through;
+            color: #8e9db3;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .edit-btn, .delete-btn {
+            border: none;
+            background: #eef2fa;
+            padding: 6px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: 0.15s;
+        }
+
+        .edit-btn {
+            color: #2c5f8a;
+        }
+        .edit-btn:hover {
+            background: #d9e4fb;
+        }
+
+        .delete-btn {
+            color: #b13e3e;
+        }
+        .delete-btn:hover {
+            background: #ffe0e0;
+        }
+
+        /* режим редактирования */
+        .task-edit {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .task-edit input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 40px;
+            border: 1px solid #4a69bd;
+            font-size: 0.95rem;
+        }
+
+        .save-btn, .cancel-btn {
+            border: none;
+            padding: 8px 18px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .save-btn {
+            background: #2c7a4d;
+            color: white;
+        }
+        .cancel-btn {
+            background: #b0bedb;
+            color: #1f2a44;
+        }
+
+        .empty-msg {
+            text-align: center;
+            padding: 2.5rem;
+            color: #6f7f9c;
+            background: #fafcff;
+            border-radius: 2rem;
+        }
+
+        /* мелочи для мобилок */
+        @media (max-width: 550px) {
+            .todo-card {
+                padding: 1.5rem;
+            }
+            .task-view {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .task-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="todo-wrapper">
+    <div class="todo-card">
+        <h1>📋 Список моих дел</h1>
+        <div class="sub">✏️ редактируй, ✔️ выполняй, 🔍 фильтруй</div>
+
+        <div id="react-root"></div> <!-- сюда React всё подтянет -->
+    </div>
+</div>
+
+<!-- Подключаем React через CDN (так проще для демо) -->
+<script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/babel-standalone@6.26.0/babel.min.js"></script>
+
+<script type="text/babel">
+    // --------------------------------------------------------------
+    // 1. Кнопка фильтра (All / Active / Completed)
+    // --------------------------------------------------------------
+    function FilterButton({ filterName, isActive, onSelectFilter }) {
+        // человеческий текст для кнопок
+        const labels = {
+            All: '📌 Все',
+            Active: '🔄 Активные',
+            Completed: '✅ Выполненные'
+        };
+        return (
+            <button
+                className={`filter-btn ${isActive ? 'active' : ''}`}
+                onClick={() => onSelectFilter(filterName)}
+                aria-pressed={isActive}
+            >
+                {labels[filterName] || filterName}
+            </button>
+        );
+    }
+
+    // --------------------------------------------------------------
+    // 2. Компонент одной задачи (может быть в режиме просмотра или редактирования)
+    // --------------------------------------------------------------
+    function TaskItem({ task, onToggle, onDelete, onEditTask }) {
+        const [isEditing, setIsEditing] = React.useState(false);
+        const [editedTitle, setEditedTitle] = React.useState(task.title);
+
+        const handleSave = (e) => {
+            e.preventDefault();
+            if (editedTitle.trim() !== '') {
+                onEditTask(task.id, editedTitle.trim());
+                setIsEditing(false);
+            }
+        };
+
+        // --- вид "просто смотрим" ---
+        const viewMode = (
+            <div className="task-view">
+                <input
+                    type="checkbox"
+                    className="task-check"
+                    checked={task.done}
+                    onChange={() => onToggle(task.id)}
+                />
+                <span className={`task-text ${task.done ? 'completed' : ''}`}>
+                    {task.title}
+                </span>
+                <div className="task-actions">
+                    <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                        ✏️ Править
+                    </button>
+                    <button className="delete-btn" onClick={() => onDelete(task.id)}>
+                        🗑️ Удалить
+                    </button>
+                </div>
+            </div>
+        );
+
+        // --- вид "редактируем название" ---
+        const editMode = (
+            <form className="task-edit" onSubmit={handleSave}>
+                <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    autoFocus
+                />
+                <button type="submit" className="save-btn">💾 Сохранить</button>
+                <button type="button" className="cancel-btn" onClick={() => setIsEditing(false)}>
+                    ❌ Отмена
+                </button>
+            </form>
+        );
+
+        // условный рендер: тернарка, как в статье MDN
+        return (
+            <li className="task-item">
+                {isEditing ? editMode : viewMode}
+            </li>
+        );
+    }
+
+    // --------------------------------------------------------------
+    // 3. Главный компонент App — тут вся магия состояний и фильтров
+    // --------------------------------------------------------------
+    function App() {
+        // Небольшой набор тестовых задач (чтобы было с чем поиграть)
+        const [tasks, setTasks] = React.useState([
+            { id: 1, title: 'Почитать про условный рендеринг в React', done: false },
+            { id: 2, title: 'Сделать фильтрацию задач как на MDN', done: false },
+            { id: 3, title: 'Попробовать редактирование задачи', done: true },
+            { id: 4, title: 'Выложить на GitHub Pages', done: false },
+        ]);
+
+        const [newTaskInput, setNewTaskInput] = React.useState('');
+        const [currentFilter, setCurrentFilter] = React.useState('All'); // 'All', 'Active', 'Completed'
+
+        // Объект с правилами фильтрации (как в обучалке)
+        const filterRules = {
+            All: () => true,
+            Active: (t) => !t.done,
+            Completed: (t) => t.done
+        };
+
+        // ---- CRUD (ну почти) ----
+        const addNewTask = (e) => {
+            e.preventDefault();
+            if (newTaskInput.trim() === '') return;
+            const newId = tasks.length ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+            const freshTask = {
+                id: newId,
+                title: newTaskInput.trim(),
+                done: false
+            };
+            setTasks([...tasks, freshTask]);
+            setNewTaskInput('');
+        };
+
+        const toggleDone = (id) => {
+            setTasks(tasks.map(t =>
+                t.id === id ? { ...t, done: !t.done } : t
+            ));
+        };
+
+        const deleteTask = (id) => {
+            setTasks(tasks.filter(t => t.id !== id));
+        };
+
+        const editTask = (id, newTitle) => {
+            setTasks(tasks.map(t =>
+                t.id === id ? { ...t, title: newTitle } : t
+            ));
+        };
+
+        // ---- фильтруем задачи перед отрисовкой ----
+        const filteredTasks = tasks.filter(filterRules[currentFilter]);
+
+        // ---- статистика для шапки (живая) ----
+        const totalCount = tasks.length;
+        const doneCount = tasks.filter(t => t.done).length;
+        const activeCount = totalCount - doneCount;
+
+        // ---- формируем кнопки фильтров динамически ----
+        const filterNames = ['All', 'Active', 'Completed'];
+        const filterButtons = filterNames.map(name => (
+            <FilterButton
+                key={name}
+                filterName={name}
+                isActive={currentFilter === name}
+                onSelectFilter={setCurrentFilter}
+            />
+        ));
+
+        // ---- рендерим список отфильтрованных задач ----
+        const renderedTasks = filteredTasks.map(task => (
+            <TaskItem
+                key={task.id}
+                task={task}
+                onToggle={toggleDone}
+                onDelete={deleteTask}
+                onEditTask={editTask}
+            />
+        ));
+
+        return (
+            <div>
+                {/* Форма добавления */}
+                <form className="add-task-form" onSubmit={addNewTask}>
+                    <input
+                        type="text"
+                        placeholder="Новая задача... например, «выучить хуки»"
+                        value={newTaskInput}
+                        onChange={(e) => setNewTaskInput(e.target.value)}
+                    />
+                    <button type="submit">
+                        ➕ Добавить
+                    </button>
+                </form>
+
+                {/* Панель фильтров */}
+                <div className="filter-bar">
+                    {filterButtons}
+                </div>
+
+                {/* Живая статистика */}
+                <div className="task-stats">
+                    <span>📋 Всего: {totalCount}</span>
+                    <span>✅ Сделано: {doneCount}</span>
+                    <span>⚡ Активно: {activeCount}</span>
+                </div>
+
+                {/* Список задач — с условием если пусто */}
+                <ul className="tasks-list">
+                    {renderedTasks.length > 0 ? (
+                        renderedTasks
+                    ) : (
+                        <div className="empty-msg">
+                            🧘‍♂️ Здесь ничего нет<br />
+                            {currentFilter === 'Completed' && 'Нет выполненных задач. Нажмите на чекбокс у любой!'}
+                            {currentFilter === 'Active' && 'Ура! Все задачи уже сделаны. Отдохните или добавьте новые.'}
+                            {currentFilter === 'All' && 'Добавьте свою первую задачу через форму выше ⬆️'}
+                        </div>
+                    )}
+                </ul>
+            </div>
+        );
+    }
+
+    // Запускаем React-приложение в div с id="react-root"
+    const container = document.getElementById('react-root');
+    const root = ReactDOM.createRoot(container);
+    root.render(<App />);
+</script>
+</body>
+</html>
