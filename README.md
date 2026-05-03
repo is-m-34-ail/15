@@ -13,4 +13,4 @@
 - Babel
 
 ## Ссылка на приложение
-https://github.com/is-m-34-ail
+https://is-m-34-ail.github.io/todo-app/
